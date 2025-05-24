@@ -1,11 +1,27 @@
 #!/usr/bin/env python
 
+"""
+Usage:
+
+```bash
+sudo python3 network_speed.py [sleep_time:0] [interface prefixes to exclude]...
+```
+
+Example:
+
+```bash
+sudo python network_speed.py 0.5 lo tun dae docker
+```
+"""
+
 from os import geteuid, listdir
 from sys import stderr, argv
 from multiprocessing import Pool
 from functools import partial
 from time import sleep
 from datetime import datetime
+
+DEFAULT_SLEEP = 1.0
 
 
 def get_total_bytes(upload: bool, interface: str) -> int:
@@ -20,14 +36,14 @@ def main() -> int:
         return 1
 
     if len(argv) < 2:
-        to_sleep = 1.0
+        to_sleep = DEFAULT_SLEEP
     else:
-        to_sleep = float(argv[1]) or 1
+        to_sleep = float(argv[1]) or DEFAULT_SLEEP
 
     interfaces = [
         interface
         for interface in listdir("/sys/class/net")
-        if interface != "lo" and not interface.startswith("tun")
+        if not any(map(lambda arg: interface.startswith(arg), argv[2:]))
     ]
 
     with Pool() as pool:
